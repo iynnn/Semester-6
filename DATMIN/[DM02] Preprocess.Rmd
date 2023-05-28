@@ -1,0 +1,849 @@
+---
+title: ""
+date: "`r Sys.Date()`"
+output:
+  rmdformats::downcute:
+    self_contained: true
+    default_style: "light"
+    downcute_theme: "default"
+---
+
+
+```{r setup, include=FALSE}
+## Global options
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+# Library
+```{r}
+library(tidyverse)
+```
+
+```{r}
+df <- read_csv("[DM02] data delirium latihan_1.csv")
+df.2 <- read.csv2("[DM02] data delirium latihan_1.csv", sep = ",")
+head(df)
+head(df.2)
+```
+```{r}
+str(df.2)
+```
+
+```{r}
+glimpse(df.2)
+```
+
+
+```{r}
+df.2 <- df.2 %>%
+  mutate(
+    statusnikah = as.numeric(statusnikah)
+  )
+summary(df.2)
+```
+Catatan : \n
+- "Jenis kelamin" udah lengkap dan udah bener, laki dan perempuan \n
+- "Usia" seharusnya gada yang aneh, udah make sense, dari 60 - 100, kalau mau lihat usia persebaran usianya ada di bawah \n
+- "Status Nikah"  Ada yang error (noisy), status nikah 2.7 --> record ke 366 \n
+- "Pendidikan", ada yang NA (2) --> record ke 307 da 315 \n
+- "Pekerjaan",  aman \n
+- "Ruang Rawat", aman \n
+- "Masuk Dari, aman \n
+- "Pembiayaan", aman harusnya \n
+- "delirium", aman harusny a \n
+- "tgl.mask", --> BANYAK ERRORNYA HHHHH \n
+1. inkonsistensi format tanggalnya\n
+2. inkonsistensi dalam format --> ada yang double spasi \n
+3. typo --> "okt" jadi "0kt" --> menyebabkan salah dalam pas mau di split (row 144) \n
+4. typo nulias tahun, contoh : 1010 dan 201 \n
+- "tgl.keluar" --> Masalahnya kurang lebih sama kaya di tanggal masuk, inkonsistensi yang sangat beragam \n
+- "tglderilium" --> kurang lebih bermasalah di inkonsistensi penulisan, untuk hubungan dengan variabel derilium tetap aman \n
+- "lamaperawatan" --> terdapat 97 missing value \n
+- "kondisiplg" --> gada masalah yang berarti (gada missinig value, gada nilai yang aneh) \n
+- "time derililum" --> ada masalah missing value \n
+- "TIME", aman \n
+- "STATUSDELIRIUM", aman --> tetapi ada indikasi tidak konsisten dengan variabel "delirium" tapi tidak bisa diputuskan karena kurangnya informasi \n
+- "INFEKSIJUGA", aman \n
+- "PENSTATUSFUNGSION" --> missing value \n
+- "GGNKOGNITIF" --> missing value \n
+- "KATALBUMIN" --> missing value \n
+- "HIPOKSIA" --> missing value \n
+- "GANGGUANMETABOLIK" --> missing value \n
+- "STROKRIWAYAT", aman \n
+- "ANEMIA", aman \n
+- "JENKELBARU", aman \n
+- "KATUMURBARU", aman \n
+- "JUMLAHOBATBARU", aman \n 
+- "PENYJANTUNGBARU", \n
+
+```{r}
+df.2 %>%
+  count(usia)
+```
+
+
+# Cek Jenis Kelamin
+
+```{r}
+df.2 %>%
+  count(jeniskelamin)
+```
+Udah aman ya jenis kelamin
+
+
+# Usia
+```{r}
+df.2 %>%
+  mutate(
+    ket.usia = case_when(
+    between(usia, 60, 69) ~ "60 - 69", 
+    between(usia, 70, 79) ~ "70 - 79", 
+    between(usia, 80, 89) ~ "80 - 89", 
+    usia > 89 ~ "90+"  ,
+    usia > 105 ~ "Over", 
+    usia < 0 ~ "Error")
+  ) %>%
+  count(ket.usia)
+```
+
+```{r}
+hist(as.numeric(df.2$usia))
+```
+
+
+```{r}
+boxplot(df.2$usia)
+```
+
+
+# Status nikah 
+```{r}
+df.2 %>%
+  count(statusnikah)
+```
+Ada error, status nikah kok 2.7
+
+```{r}
+df.2[which(df.2$statusnikah == 2.7),]
+```
+
+
+
+# Pendidikan
+```{r}
+df.2 %>%
+  count(pendidikan)
+```
+
+# Hubungan usia dengan pendidikan 
+- gada sih, karena usianya start from 60 and end in 100
+ada yang missing value 2
+
+```{r}
+df.2 %>%
+  filter(is.na(pendidikan))
+```
+
+```{r}
+df.2[which(is.na(df.2$pendidikan)),]
+```
+
+
+# Pekerjaan 
+```{r}
+df.2 %>%
+  count(pekerjaan)
+```
+
+
+
+
+# Ruang Rawat 
+```{r}
+df.2 %>%
+  count(ruangrwt)
+```
+
+# Masuk Dari
+```{r}
+df.2 %>%
+  count(masukdari)
+```
+
+
+
+# Pembiayaan 
+```{r}
+df.2 %>%
+  mutate(
+    pembiayaan = as.factor(pembiayaan)
+  ) %>%
+  count(pembiayaan)
+```
+
+# Delirium
+```{r}
+df.2 %>%
+  count(delirium)
+```
+
+
+# Tanggal Masuk
+```{r}
+df.2$tglmask
+```
+
+Kek orang gila mikir ini weilah, aku kepikirannya masih manual juga 
+```{r}
+# library(clock)
+# date_parse(
+#   df.2$tglmask, 
+#   format = c("%d-%m-%Y", "%d %m %Y" )
+# )
+```
+
+Kek gini nih 
+```{r}
+ 
+tgl.masuk <- df.2$tglmask %>%
+  tolower() %>%
+  str_remove_all("-") %>%
+  str_remove_all(" ")
+
+tgl.masuk 
+```
+
+
+januari 
+februari 
+maret 
+april 
+mei 
+juni 
+jul
+agus
+sep
+ok
+nov
+des
+
+# split date
+```{r}
+# tgl.masuk <- as.data.frame(tgl.masuk)
+
+tgl.masuk <- gsub('([0-9])([a-z])','\\1/\\2', tgl.masuk)
+tgl.masuk<- gsub('([a-z])([0-9])','\\1/\\2', tgl.masuk)
+tgl.masuk <- as.data.frame(tgl.masuk)
+tgl.masuk <- tgl.masuk %>%
+  mutate(
+    d = str_split(tgl.masuk, pattern = "/")
+  )
+tgl.masuk
+```
+
+```{r}
+tgl <- data.frame(matrix(unlist(tgl.masuk$d), ncol= 3, byrow = TRUE))
+length(unique(tgl$X2))
+tgl
+```
+
+Gabungin tgl.masuk dengan tgl
+```{r}
+tgl.masuk <- data.frame(
+  tgl.masuk, tgl
+)
+
+tgl.masuk[144,]
+```
+
+
+```{r}
+length(unique(tgl.masuk$X1))
+unique(tgl.masuk$X1)
+
+```
+Ini di tanggal ada yang tanggal 90 T_T 
+
+```{r}
+# Melihat mana sih yang ga jelas kok ada tanggal 90
+subset(df.2, grepl('^9', df.2$tglmask))
+```
+
+Problem solved, karena row 144 pas nulis tanggal masuk itu jadi bulannya diawali dengan angka ("0kt")
+
+```{r}
+tgl.masuk <- tgl.masuk %>%
+  mutate(
+    X1 = ifelse(X1 == "90", "9", X1)
+  )
+
+tgl.masuk %>%
+  select(X1) %>%
+  arrange(as.numeric(X1)) %>%
+  unique()
+
+# alhamdulillah tanggalnya gada yang aneh aneh lagi 
+```
+
+# Perbaiki bulannya 
+```{r}
+length(unique(tgl.masuk$X2))
+unique(tgl.masuk$X2)
+```
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Tanya ini plis : kan misal typo, "jsn" itu "jan" atau "jun", tapi kalo menurut intuisi itu "jan"
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+Mari Kita benerin bulannya
+```{r}
+# tgl.masuk <- tgl.masuk %>%
+#   mutate(
+#     X2 = case_when(
+#       starts_with("jan") ~ "Januari"
+#       
+#     #
+  # )
+```
+```{r}
+
+tgl.masuk <- tgl.masuk %>%
+  # select(X2) %>%
+  mutate(
+    X2 = case_when(
+      grepl('^ja', X2) ~ "Januari", 
+      grepl('^fe', X2) ~ "Februari",
+      grepl('^ma', X2) ~ "Maret", 
+      grepl('^ap', X2) ~ "April",
+      grepl('^me', X2) ~ "Mei",
+      grepl('^jun', X2) ~ "Juni", 
+      grepl('^jul', X2) ~ "Juli", 
+      grepl('^ag', X2) ~ "Agustus",
+      grepl('^s', X2) ~ "September", 
+      grepl('^ok', X2) ~ "Oktober", 
+      grepl('^nov', X2) ~ "November", 
+      grepl('^de', X2) ~ "Desember", 
+      grepl('^kt', X2) ~ "Oktober", # dia membenarkan yang typo oktober dengan awalan 0 
+      grepl('^js', X2) ~ "Oktober" # ini typo parah 
+      )
+    ) 
+tgl.masuk
+
+```
+
+```{r}
+tgl.masuk %>%
+  count(X2)
+```
+
+
+```{r}
+length(unique(tgl.masuk$X3))
+unique(tgl.masuk$X3)
+```
+
+```{r}
+tgl.masuk %>%
+  mutate(
+    X3 = case_when( # menghindari perbedaan format, tapi tang 3 huruf ini gatau nanti isinya apa 
+      nchar(X3) == 2 ~ paste0("20", X3),
+      nchar(X3) == 3 ~ paste(X3),
+      nchar(X3) == 4 ~ paste(X3)
+    ),
+    X3 = case_when(
+      grepl('^1', X3) ~ paste("2010"),
+      TRUE ~ as.character(X3)
+      
+    )
+  
+  ) %>%
+  count(X3)
+```
+Nanti yang 201 bisa diperbaikin ketika ngelihat tgl keluarnya sama tgl deliriumnya
+
+```{r}
+df.2[grep("201$", df.2$tglmask), ]
+```
+Dia ini memang error ygy
+
+
+```{r}
+tgl.masuk <- tgl.masuk %>%
+  mutate(
+    X3 = case_when( # menghindari perbedaan format, tapi tang 3 huruf ini gatau nanti isinya apa 
+      nchar(X3) == 2 ~ paste0("20", X3),
+      nchar(X3) == 3 ~ paste(X3),
+      nchar(X3) == 4 ~ paste(X3)
+    ),
+    X3 = case_when(
+      grepl('^1', X3) ~ paste("2010"),
+      TRUE ~ as.character(X3)
+      
+    )
+  
+  )
+tgl.masuk
+```
+
+
+
+# Cek keseuaian bulan dan tahunnya 
+
+```{r}
+tgl.masuk <- tgl.masuk %>%
+  mutate (
+    masuk.fix = paste(X1,X2,X3),
+    
+  )
+tgl.masuk
+```
+
+```{r}
+length(unique(tgl.masuk$masuk.fix))
+unique(tgl.masuk$masuk.fix)
+
+tgl.masuk %>%
+  count(masuk.fix)
+```
+
+
+```{r}
+tgl.masuk <- tgl.masuk %>%
+  mutate(
+    X2.2 = case_when(
+      X2 == "Januari" ~ "01", 
+      X2 == "Februari" ~ "02",
+      X2 == "Maret" ~ "03",
+      X2 == "April" ~ "04",
+      X2 == "Mei" ~ "05",
+      X2 == "Juni" ~ "06",
+      X2 == "Juli" ~ "07",
+      X2 == "Agustus" ~ "08",
+      X2 == "September" ~ "09",
+      X2 == "Oktober" ~ "10",
+      X2 == "November" ~ "11",
+      X2 == "Desember" ~ "12",
+    )
+  ) 
+
+```
+
+# Cek apakah aad yang aneh dalam penanggalan 
+misal, 31 Feb gitu 
+
+```{r}
+tgl.masuk <- tgl.masuk %>%
+  mutate(
+    X1 = as.numeric(X1),
+    X3 = as.numeric(X3),
+    is.tgl.masuk.error = ifelse(
+      (
+        ((between(X1, 1,31) & (X2 == "Januari"))) |
+        ((between(X1 ,1,31) & (X2 == "Maret")))   |
+        ((between(X1, 1,31) & (X2 == "Mei")))     |
+        ((between(X1, 1,31) & (X2 == "Juli")))    |
+        ((between(X1, 1,31) & (X2 == "Agustus"))) |
+        ((between(X1, 1,31) & (X2 == "Oktober"))) |
+        ((between(X1, 1,31) & (X2 == "Desember")))|
+        ((between(X1, 1,30) & (X2 == "April"))) |
+        ((between(X1, 1,30) & (X2 == "Juni")))  |
+        ((between(X1, 1,30) & (X2 == "September"))) |
+        ((between(X1, 1,30) & (X2 == "November")))  |
+        ((between(X1, 1,28) & (X2 == "Februari")) & (X3 %% 4 != 0)) |
+        ((between(X1, 1,29) & (X2 == "Februari")) & (X3 %% 4 == 0))
+      ) & (between(X3,2000,2020)),
+    0, # if date is no error
+    1) # if date is error
+  )
+tgl.masuk %>%
+  count(is.tgl.masuk.error)
+```
+
+
+
+
+
+# Tgl Keluar 
+```{r}
+df.2$tglplg
+```
+
+```{r}
+tgl.pulang <- df.2$tglplg %>%
+  tolower() %>%
+  str_remove_all("-") %>%
+  str_remove_all(" ")
+
+tgl.pulang 
+```
+
+```{r}
+tgl.pulang <- gsub('([0-9])([a-z])','\\1/\\2', tgl.pulang)
+tgl.pulang <- gsub('([a-z])([0-9])','\\1/\\2', tgl.pulang)
+tgl.pulang <- as.data.frame(tgl.pulang)
+tgl.pulang <- tgl.pulang %>%
+  mutate(
+    d = str_split(tgl.pulang, pattern = "/")
+  )
+tgl.pulang
+```
+
+```{r}
+tgl.2 <- data.frame(matrix(unlist(tgl.pulang$d), ncol= 3, byrow = TRUE))
+length(unique(tgl.2$X2))
+tgl.2
+```
+
+# Tgl Delir
+```{r}
+df.2$tgldelir
+```
+Inkonsisensi dalam penulisannya delir
+
+# Hubungan Tgl Delir dengan Delir 
+```{r}
+df.2 %>%
+  select(delirium, tgldelir)
+```
+
+
+## Hubungan delir = 1 dengan tgl ditetapkannya delirium
+```{r}
+df.2 %>%
+  select(delirium, tgldelir) %>%
+  filter(delirium == 1)
+```
+Tidak ada masalah, artinya semua yang diputuskan sebagai delirium itu udah ada data tanggalnya
+
+```{r}
+df.2 %>%
+  select(delirium, tgldelir) %>%
+  filter(delirium == 0) %>%
+  count(delirium,tgldelir)
+```
+Sama seperti di atas, tidak ada masalah dari delirium yang belum ditetapkan karena tidak ada tanggalnya
+
+
+# Variabel Lama Perawatan
+```{r}
+df.2 %>%
+  select(lamaperawatan) %>%
+  count(lamaperawatan)
+```
+terdapat 97 missing value,
+tidak ada informasi lanjutan apakah ini hari atau jam atau apa, tapi ini masih makesense dalam lama perawatan (waktu)
+
+
+# Kondisi Pulang 
+```{r}
+df.2 %>%
+  count(kondisiplg)
+```
+Stabil, gada masalah 
+
+# Time Derilium 
+```{r}
+df.2 %>%
+  count(timedelirium)
+```
+terdapat sejumlah 360 missing value
+
+```{r}
+boxplot(df.2$timedelirium)
+```
+terdapat maslah outlier extreme 
+
+
+
+# TIME
+tidak ada penjelasan lebih lanjut mengenai apa itu "time", sehingga tidak bisa dilihat korelasi dengan variabel maupun keadaan riil nya 
+tetapi tidak ada masalah missing value
+```{r}
+df.2 %>%
+  count(TIME)
+```
+
+
+# STATUSDELIRIUM
+```{r}
+df.2 %>%
+  count(STATUSDELIRIUM)
+```
+
+## Korelasi Status  dengan delirium
+```{r}
+df.2 %>%
+  select(delirium, STATUSDELIRIUM) %>%
+  count(delirium, STATUSDELIRIUM)
+```
+ini cukup mencurigakan, tetapi ga bisa diambil kesimpulan karena kurang tahu mengenai metadata dari delirium dan status delirium itu sendiri 
+ada 11 record yang tidak konsisten 
+
+
+
+# INFEKSIJUGA
+```{r}
+df.2 %>%
+  count(INFEKSIJUGA)
+```
+
+# PENSTATUSFUNGSION
+missing value 
+```{r}
+df.2 %>%
+  count(PENSTATUSFUNGSION)
+```
+
+
+# GGNKOGNITIF
+missing value
+```{r}
+df.2 %>%
+  count(GGNKOGNITIF)
+```
+
+# KATALBUMIN
+missingvalue
+```{r}
+df.2 %>%
+  count(KATALBUMIN)
+```
+
+
+# HIPOKSIA
+missing value
+```{r}
+df.2 %>%
+  count(HIPOKSIA)
+```
+
+
+# GANGGUANMETABOLIK
+missing value
+```{r}
+df.2 %>%
+  count(GANGGUANMETABOLIK) 
+```
+
+# STROKRIWAYAT
+```{r}
+df.2 %>%
+  count(STROKRIWAYAT)
+```
+
+
+
+# ANEMIA
+```{r}
+df.2 %>%
+  count(ANEMIA)
+```
+
+
+# JENKELBARU
+```{r}
+df.2 %>%
+  count(JENKELBARU)
+```
+
+
+# KATUMURBARU
+```{r}
+df.2 %>%
+  count(KATUMURBARU)
+```
+
+
+# JUMLAHOBATBARU
+```{r}
+df.2 %>%
+  count(JUMLAHOBATBARU)
+```
+
+
+# PENYJANTUNGBARU
+```{r}
+df.2 %>%
+  count(PENYJANTUNGBARU)
+```
+
+
+
+```{r}
+df.2$dup <-  duplicated(df.2)
+df.2 %>%
+  filter(dup == TRUE)
+```
+
+# Pemberian Tanda pada record yang terdapat anomali
+```{r}
+df.3 <- df.2 %>%
+  mutate(
+    # Menandai yang terdapat duplikasi data
+    flank_duplicate = 
+      case_when(
+        dup == TRUE ~ 1,
+        dup != TRUE ~ 0
+      ),
+    
+    # Menandai status nikah yang noisy
+    flank_status_nikah = 
+      case_when(
+        ((statusnikah == 1) | (statusnikah == 2) |(statusnikah == 3)) ~ 0,
+        !((statusnikah == 1) | (statusnikah == 2) |(statusnikah == 3)) ~ 1,
+      ), 
+    
+    # Menandai data Missing pendidikan 
+    flank_NA_pendidikan = 
+      case_when(
+        is.na(pendidikan) ~ 1,
+        !(is.na(pendidikan)) ~ 0
+      ),
+    
+    # Menandai NA "lama perawatan"
+    flank_NA_perawatan = 
+      case_when(
+        is.na(lamaperawatan) ~ 1,
+        !(is.na(lamaperawatan)) ~ 0
+      ),
+    
+    # Menandai NA "time delirium"
+    flank_NA_time_delir = 
+      case_when(
+        is.na(timedelirium) ~ 1,
+        !(is.na(timedelirium)) ~ 0
+      ),
+    
+    # Menandai NA "PENSTATUSFUNGSION"
+    flank_NA_PENSTATUSFUNGSION = 
+      case_when(
+        is.na(PENSTATUSFUNGSION) ~ 1,
+        !(is.na(PENSTATUSFUNGSION)) ~ 0
+      ),
+    
+    # Menandai NA "GGNKOGNITIF"
+    flank_NA_GGNKOGNITIF = 
+      case_when(
+        is.na(GGNKOGNITIF) ~ 1,
+        !(is.na(GGNKOGNITIF)) ~ 0
+      ),
+    
+    # Menandai NA "KATALBUMIN"
+    flank_NA_KATALBUMIN = 
+      case_when(
+        is.na(KATALBUMIN) ~ 1,
+        !(is.na(KATALBUMIN)) ~ 0
+      ),
+    
+    # Menandai NA "HIPOKSIA"
+    flank_NA_HIPOKSIA = 
+      case_when(
+        is.na(HIPOKSIA) ~ 1,
+        !(is.na(HIPOKSIA)) ~ 0
+      ),
+    
+    
+    # Menandai NA "GANGGUANMETABOLIK"
+    flank_NA_GANGGUANMETABOLIK = 
+      case_when(
+        is.na(GANGGUANMETABOLIK) ~ 1,
+        !(is.na(GANGGUANMETABOLIK)) ~ 0
+      ),
+    
+    # Menandai minimal ada 1 variabel yang NA dalam suatu record tsb 
+    
+    flank_NA_total = 
+      case_when(
+        (
+          (flank_NA_pendidikan == 1) | 
+          (flank_NA_perawatan == 1) |
+          (flank_NA_time_delir == 1) |
+          (flank_NA_PENSTATUSFUNGSION == 1) |
+          (flank_NA_GGNKOGNITIF == 1) |
+          (flank_NA_KATALBUMIN == 1) |
+          (flank_NA_HIPOKSIA == 1) |
+          (flank_NA_GANGGUANMETABOLIK == 1)
+        ) ~ 1, 
+        TRUE ~ 0
+      ),
+    # Keseluruhan mengandung minimal ada 1 nilai NA, hal ini memang bentuk datanya adalah seperti itu 
+    
+    
+    # Mengecek apakah terjadi konsistensi antara variabel delirium dengan Status Delirium 
+    is.same.1 = 
+      STATUSDELIRIUM == delirium,
+    
+    # Transformasi Z untuk melihat apakah terdapat outlier atau tidak 
+    
+    z.usia = scale(usia),
+    z.lamaperawatan = scale(lamaperawatan),
+    z.TIME = scale(TIME),
+    
+    # Cek Outlier yang mana jika nilai |z| > 2.5 
+    outlier.usia = 
+      case_when(
+        abs(z.usia) >= 2.5 ~ 1, 
+        TRUE ~ 0
+      ),
+    outlier.lamaperawatan = 
+      case_when(
+        abs(z.lamaperawatan) >= 2.5 ~ 1, 
+        TRUE ~ 0
+      ),
+    outlier.TIME = 
+      case_when(
+        abs(z.TIME) >= 2.5 ~ 1, 
+        TRUE ~ 0
+      )
+  )
+```
+
+
+Catatan : \n
+- "Jenis kelamin" udah lengkap dan udah bener, laki dan perempuan \n
+- "Usia" seharusnya gada yang aneh, udah make sense, dari 60 - 100, kalau mau lihat usia persebaran usianya ada di bawah \n
+- "Status Nikah"  Ada yang error (noisy), status nikah 2.7 --> record ke 366 \n
+- "Pendidikan", ada yang NA (2) --> record ke 307 da 315 \n
+- "Pekerjaan",  aman \n
+- "Ruang Rawat", aman \n
+- "Masuk Dari, aman \n
+- "Pembiayaan", aman harusnya \n
+- "delirium", aman harusny a \n
+- "tgl.mask", --> BANYAK ERRORNYA HHHHH \n
+1. inkonsistensi format tanggalnya\n
+2. inkonsistensi dalam format --> ada yang double spasi \n
+3. typo --> "okt" jadi "0kt" --> menyebabkan salah dalam pas mau di split (row 144) \n
+4. typo nulias tahun, contoh : 1010 dan 201 \n
+- "tgl.keluar" --> Masalahnya kurang lebih sama kaya di tanggal masuk, inkonsistensi yang sangat beragam \n
+- "tglderilium" --> kurang lebih bermasalah di inkonsistensi penulisan, untuk hubungan dengan variabel derilium tetap aman \n
+- "lamaperawatan" --> terdapat 97 missing value \n
+- "kondisiplg" --> gada masalah yang berarti (gada missinig value, gada nilai yang aneh) \n
+- "time derililum" --> ada masalah missing value \n
+- "TIME", aman \n
+- "STATUSDELIRIUM", aman --> tetapi ada indikasi tidak konsisten dengan variabel "delirium" tapi tidak bisa diputuskan karena kurangnya informasi \n
+- "INFEKSIJUGA", aman \n
+- "PENSTATUSFUNGSION" --> missing value \n
+- "GGNKOGNITIF" --> missing value \n
+- "KATALBUMIN" --> missing value \n
+- "HIPOKSIA" --> missing value \n
+- "GANGGUANMETABOLIK" --> missing value \n
+- "STROKRIWAYAT", aman \n
+- "ANEMIA", aman \n
+- "JENKELBARU", aman \n
+- "KATUMURBARU", aman \n
+- "JUMLAHOBATBARU", aman \n 
+- "PENYJANTUNGBARU", \n
+
+
+
+
+
+
+```{r}
+df.3 
+```
+
+
+
