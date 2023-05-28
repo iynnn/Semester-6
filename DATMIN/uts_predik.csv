@@ -1,0 +1,31 @@
+no_sampel,Gender,Married,Dependents,Education,Self_Employed,Applicant_Income,Coapplicant_Inc,Loan_Amount,Term,Credit_History,Area
+28,Male,Yes,2,Not Graduate,No,422600,104000,11000000,360,1,Urban
+35,Male,No,3,Graduate,No,1250000,3.00E+05,32000000,360,1,Rural
+69,Male,Yes,3,Not Graduate,Yes,710000,0,12500000,60,1,Urban
+98,Male,Yes,0,Graduate,No,197700,99700,5000000,360,1,Rural
+131,Male,No,0,Graduate,Yes,2016600,0,65000000,480,NA,Urban
+171,Male,Yes,0,Not Graduate,Yes,182000,176900,9500000,360,1,Rural
+193,Male,Yes,0,Not Graduate,No,603300,0,16000000,360,1,Urban
+226,Male,Yes,0,Graduate,No,325000,0,17000000,360,1,Rural
+233,Male,No,0,Not Graduate,No,318900,259800,12000000,NA,1,Rural
+248,Male,Yes,1,Not Graduate,No,660800,0,13700000,180,1,Urban
+251,Male,Yes,0,Not Graduate,No,166800,389000,20100000,360,0,Rural
+266,Male,No,0,Graduate,No,409500,344700,15100000,360,1,Rural
+268,Male,Yes,3,Graduate,No,433300,181100,16000000,360,0,Urban
+284,Female,No,0,Graduate,No,181100,166600,5400000,360,1,Urban
+291,Male,Yes,0,Graduate,No,307500,241600,13900000,360,1,Rural
+304,Male,Yes,1,Graduate,No,162500,180300,9600000,360,1,Urban
+340,Female,No,0,Graduate,No,416000,0,7100000,360,1,Rural
+348,Male,Yes,2,Not Graduate,No,308300,216800,12600000,360,1,Urban
+351,Male,Yes,0,Graduate,No,908300,0,22800000,360,1,Rural
+352,Male,No,0,Graduate,No,875000,416700,30800000,360,1,Rural
+400,Female,No,0,Graduate,No,150000,180000,10300000,360,0,Rural
+409,Male,Yes,1,Graduate,No,830000,0,15200000,300,0,Rural
+410,Male,Yes,5,Graduate,No,8100000,0,36000000,360,0,Rural
+443,Male,No,6,Not Graduate,No,470700,199300,14800000,360,1,Rural
+454,Male,Yes,0,Graduate,No,248300,246600,9000000,180,0,Rural
+482,Male,Yes,4,Not Graduate,No,309500,0,11300000,360,1,Rural
+498,Male,Yes,0,Graduate,No,462500,285700,11100000,12,NA,Urban
+523,Male,Yes,5,Graduate,Yes,567700,142400,10000000,360,1,Rural
+532,Male,Yes,3,Graduate,No,428100,0,10000000,360,1,Urban
+606,Male,Yes,0,Not Graduate,No,240000,380000,0,180,1,Urban

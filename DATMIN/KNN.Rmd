@@ -1,0 +1,117 @@
+---
+title: ""
+date: "`r Sys.Date()`"
+output:
+  rmdformats::downcute:
+    self_contained: true
+    default_style: "light"
+    downcute_theme: "default"
+---
+
+
+```{r setup, include=FALSE}
+## Global options
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+loan <- read.csv("credit_data.csv")
+str(loan)
+```
+```{r}
+head(loan)
+```
+
+```{r}
+loan.subset <- loan[c('Creditablity','Age..years.','Sex...Marital.Status',
+                      'Occupation','Account.Balance','Credit.Amount',
+                      'Length.of.current.employment','Purpose')]
+str(loan.subset)
+```
+
+```{r}
+unique(loan.subset$Account.Balance)
+```
+
+
+faktornya gimana? 
+```{r}
+colnames(loan.subset)
+```
+
+```{r}
+glimpse(loan.subset)
+```
+```{r}
+summary(loan.subset)
+```
+```{r}
+for (i in 1:length(loan.subset[,1])){
+  paste(colnames(loan.subset[,i]), " : ", unique(loan.subset[,i]))
+}
+```
+```{r}
+paste(colnames(loan.subsedt[,1]), " : ", unique(loan.subset[,1]))
+```
+kategorik bisa make hamming, 
+
+kalo euclid, minimal ordinal 
+
+
+kalo misal mau make make euclid, tapi dia ga ordinal, kasus ini yang sex and marital status bisa dihapus 
+
+
+OH di loan subset bisa pilih variabel lain 
+
+
+```{r}
+loan.subset <- as.data.frame(sapply(loan.subset, as.numeric))
+head(loan.subset)
+```
+
+
+
+# Normalilzation
+kenapa normalisasi? biar ga 
+
+normalisasi jangan di semua variabel ya 
+
+kenapa min max?
+
+
+boleh kalomisal, make euclid sdmua, kalo misal udah difaktorin itu bisa dihitung jarakna, logicnya kalo semua jaraknya salah itu yaudin, gitu lho, 
+kan toh ini juga cuma buat nyari jarak aja 
+
+```{r}
+#Normalization
+normalize <- function(x){
+  return ((x - min(x)) / (max(x) - min(x))) 
+  }
+loan.subset.n <- as.data.frame(lapply(loan.subset[,2:8], normalize))
+head(loan.subset.n)
+
+```
+
+```{r}
+loan.subset %>%
+  filter((is.na(Sex...Marital.Status)))
+```
+
+
+
+
+
+
+tugas datmin sekelompok buat analisis mengenai supervised learning 
+lewat email perkelompok, Laporan 
+beecerita mau ngapain aja, metodenya apa, dan hasil analisisnya apa 
+ini dikumpul sebelum pertemuan 9
+
+
+
+cari data offsat 

@@ -1,0 +1,74 @@
+---
+title: ""
+date: "`r Sys.Date()`"
+output:
+  rmdf#import data
+setwd("C:/Users/yanto/OneDrive - UGM 365/semester 6/semester-6-/DatMin/[DM05] Pertemuan 5")
+german <- read.csv("german_credit.csv", header = TRUE)
+head(german)
+ormats::downcute:
+    self_contained: true
+    default_style: "light"
+    downcute_theme: "default"
+---
+
+
+```{r setup, include=FALSE}
+## Global options
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r}
+library(party)
+library(randomForest)
+```
+
+```{r}
+#import data
+setwd("C:/Users/yanto/OneDrive - UGM 365/semester 6/semester-6-/DatMin/[DM05] Pertemuan 5")
+german <- read.csv("german_credit.csv", header = TRUE)
+head(german)
+```
+
+```{r}
+#jadikan variabel kategorik sebagai faktor
+german$Telephone <- as.factor(german$Telephone)
+german$ForeignWorker <- as.factor(german$ForeignWorker)
+german$Class <- as.factor(german$Class)
+```
+
+```{r}
+str(german)
+```
+
+
+```{r}
+#Partisi data menjadi data training dan testing
+library(caret)
+#data train sebanyak 75%
+inTrain <- createDataPartition(y=german$Class, p=0.75, list=FALSE)
+train <- german[inTrain,]
+test <- german[-inTrain,]
+```
+
+
+```{r}
+# buat model random forest.
+
+output.forest <- randomForest(Class ~ ., data = german)
+# tuning --> "entry" banyaknya pohon 
+# n try --> banyaknya aatribut di setiap pohon 
+output.forest
+
+importance(output.forest)
+
+```
+
+
+
+
+
+
+
+
+

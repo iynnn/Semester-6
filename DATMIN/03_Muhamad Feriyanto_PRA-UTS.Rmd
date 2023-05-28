@@ -1,0 +1,253 @@
+---
+title: ""
+date: "`r Sys.Date()`"
+output:
+  rmdformats::downcute:
+    self_contained: true
+    default_style: "light"
+    downcute_theme: "default"
+---
+
+
+```{r setup, include=FALSE}
+## Global options
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r}
+setwd("C:/Users/yanto/OneDrive - UGM 365/semester 6/semester-6-/DatMin/[DM07] Pertamuan 7")
+library(tidyverse)
+```
+
+
+```{r}
+df.soal <- read.csv("soal.csv")
+df.predict <- read.csv("predict.csv", sep = ";")
+```
+
+```{r}
+head(df.soal)
+```
+```{r}
+# str(df.soal)
+```
+
+
+atap (1-8) ordinal : 1-8, 1 menunjukkan kondisi yang lebih baik, 8 kondsi paling buruk  
+jml_art : ya jumlah art
+dinding : 1 tembok, 2 non tembok 
+lantai  (1-4) : 1 lebih baik
+fasbab : fasilitas buang air besar , 1 dengan kloset 2 tanpa kloset 
+penerangan : 1 listrik PLn, 2 bukan listrik PLN 
+air minum : 1 air layak minum , 2tidak layak
+miskin  (target atribut) : 1 miskin, 2 tidak miskin 
+ltkapita : luas lantai perkapita
+
+
+```{r}
+head(df.predict)
+```
+
+
+# PREPROCESSING 
+
+```{r}
+df <- df.soal %>%
+  select(-c(X,X.1)) %>%
+  mutate(
+    atap = as.factor(atap),
+    dinding = as.factor(dinding),
+    lantai = as.factor(lantai),
+    fasbab = as.factor(fasbab),
+    penerangan = as.factor(penerangan),
+    airminum = as.factor(airminum),
+    miskin = as.factor(miskin))
+  
+
+head(df)
+```
+
+
+```{r}
+str(df)
+```
+
+```{r}
+df.test <- df.predict %>%
+  select(-c(X,X.1)) %>%
+  mutate(
+    atap = as.factor(atap),
+    dinding = as.factor(dinding),
+    lantai = as.factor(lantai),
+    fasbab = as.factor(fasbab),
+    penerangan = as.factor(penerangan),
+    airminum = as.factor(airminum))
+
+head(df.test)
+```
+```{r}
+str(df.test)
+```
+
+
+```{r}
+library(party)
+library(randomForest)
+```
+
+```{r}
+output.forest <- randomForest(miskin ~ ., data = df)
+output.forest
+```
+
+
+
+```{r}
+Prediksi <- predict(output.forest, df.test)
+Prediksi # prediksi berdasarkan dari data df test
+```
+
+# Mencoba partisi data soal
+```{r}
+#Partisi data menjadi data training dan testing
+library(caret)
+```
+
+```{r}
+#data train sebanyak 80%
+inTrain <- createDataPartition(y=df$miskin, p=0.80, list=FALSE)
+train <- df[inTrain,]
+test <- df[-inTrain,]
+```
+
+
+# Random Forest dengan partisi 80:20
+```{r}
+output.forest.2 <- randomForest(miskin ~ ., data = train)
+output.forest.2
+
+importance(output.forest)
+
+```
+
+```{r}
+#validasi model dengan data test
+Prediksi.2 <- predict(output.forest.2, test)
+
+#confusion matrix
+CM <- table(test$miskin, Prediksi.2)
+CM
+
+#akurasi
+accuracy <- (sum(diag(CM)))/sum(CM)
+accuracy
+
+```
+
+# ini memprediksi data predict.csv
+```{r}
+Prediksi.3 <- predict(output.forest.2, df.test)
+Prediksi.3
+```
+
+
+
+```{r}
+Prediksi 
+Prediksi.3
+```
+
+
+# SVM 
+
+
+```{r}
+library(e1071)
+```
+
+```{r}
+svm.model.1 <- svm(miskin~., data =df)
+summary(svm.model.1)
+```
+
+```{r}
+x <- subset(df, select = -miskin)
+pred <- predict(svm.model.1,x)
+CM.svm <- table(pred,df$miskin)
+accuracy.svm <- (sum(diag(CM.svm)))/sum(CM.svm)
+accuracy.svm
+```
+
+
+```{r}
+predict(svm.model.1, df.test)
+```
+
+
+# menggunakan partisi data soal 80:20
+```{r}
+svm.model.2 <- svm(miskin~., data = train)
+summary(svm.model.2)
+```
+
+```{r}
+x.1 <- subset(train, select = -miskin)
+pred.svm <- predict(svm.model.2,x.1)
+CM.svm.2 <- table(pred.svm,train$miskin)
+accuracy.svm.2 <- (sum(diag(CM.svm.2)))/sum(CM.svm.2)
+accuracy.svm.2
+```
+
+```{r}
+predict(svm.model.2, df.test)
+```
+
+
+# Tuning SVM
+```{r}
+svm.model.3 <- svm(miskin ~ ., data=df, kernel="radial", cost=1, gamma=0.5) # COST = toleransi kkita untuk membentuk support vector , 
+summary(svm.model.3)
+```
+
+```{r}
+x <- subset(df, select = -miskin)
+pred.3 <- predict(svm.model.3,x)
+CM.svm.3 <- table(pred,df$miskin)
+accuracy.svm.3 <- (sum(diag(CM.svm.3)))/sum(CM.svm.3)
+accuracy.svm.3
+```
+
+```{r}
+predict(svm.model.3, df.test)
+```
+
+
+
+# Neural Network
+```{r}
+library(nnet)
+library(caret)
+```
+
+
+```{r}
+model.nn <- train(miskin ~ ., df, method='nnet', 
+               trace = FALSE,
+               preProc = c("center", "scale")) # train
+prediction <- predict(model.nn, df.test)           # predict
+prediction 
+
+```
+
+# NN with partition
+```{r}
+model.nn.1 <- train(miskin ~ ., train, method='nnet', 
+               trace = FALSE,
+               preProc = c("center", "scale")) # train
+prediction <- predict(model.nn.1, df.test)           # predict
+prediction
+```
+
+
+
+

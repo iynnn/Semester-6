@@ -1,0 +1,72 @@
+---
+title: ""
+date: "`r Sys.Date()`"
+output:
+  rmdformats::downcute:
+    self_contained: true
+    default_style: "light"
+    downcute_theme: "default"
+---
+
+
+```{r setup, include=FALSE}
+## Global options
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r}
+setwd("C:/Users/yanto/OneDrive - UGM 365/semester 6/semester-6-/DatMin/[DM06] Pertemuan 6")
+```
+
+```{r}
+library(nnet)
+library(caret)
+```
+
+tidak bisa mengatur banyaknya hidden layer, bisanya mengatur neuronnya
+```{r}
+data("iris")				# Get some data
+data <- iris
+#Now we shall partition the data into train and test data
+inTrain <- createDataPartition(y=iris$Species, p=0.75, 
+                               list=FALSE)   
+# We wish 75% for the trainset 
+train.set <- iris[inTrain,]
+test.set  <- iris[-inTrain,]
+```
+
+```{r}
+#Check test train ratio
+nrow(train.set)/nrow(test.set) # should be around 3
+```
+
+```{r}
+model <- train(Species ~ ., train.set, method='nnet', 
+               trace = FALSE,
+               preProc = c("center", "scale")) # train
+prediction <- predict(model, test.set[-5])           # predict
+table(prediction, test.set$Species) 
+
+```
+
+```{r}
+model$modelInfo
+
+```
+
+
+```{r}
+# ini adalah synnatic weight
+summary(model)
+```
+```{r}
+plot(model)
+```
+```{r}
+
+```
+
+
+
+
+

@@ -1,0 +1,560 @@
+---
+title: "utsdatmin_222011347"
+author: "Muhamad Feriyanto"
+date: "4/3/2023"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Library
+library(tidyverse)
+library(DescTools) # for winsorizing
+# library(imbalance)
+# library(DMwR2)
+library(smotefamily)
+library(ROSE) # oversampling 
+library(caTools) #sampling 70 : 30
+library(caret)
+library("e1071")
+```
+
+# Input Data 
+
+```{r}
+setwd("C:/Users/yanto/OneDrive - UGM 365/semester 6/semester-6-/DatMin/[DM-UTS]")
+raw <- read.csv("uts_data.csv")
+df.pred <- read.csv("uts_predik.csv")
+df.temp <- read.csv("utsdatmin_NIM(template).csv")
+set.seed(123)
+```
+
+```{r}
+head(raw)
+```
+
+```{r}
+head(df.pred)
+```
+
+```{r}
+head(df.temp)
+```
+```{r}
+glimpse(raw)
+glimpse(df.pred)
+```
+
+
+# PREPROCESSING
+
+
+## Turning variabel credit history and dependent into characters
+```{r}
+
+df <- raw %>%
+  select(-no_sampel) %>%
+  mutate(
+    Credit_History = as.character(Credit_History),
+    # Dependents = as.character(Dependents)
+  )
+
+```
+
+
+
+## Duplikat
+```{r}
+data.frame(
+  raw.of.data = df %>% nrow(),
+  uniq.data = df %>% distinct() %>% nrow()
+)
+```
+
+
+## Check missing value 
+```{r}
+colSums(is.na(df))
+colSums(is.na(df.pred))
+```
+Untuk data asli dan data prediksi sama sama ada missing value nya, di term dan credit history,
+term bisa digunakan modus, kalau credit history juga bisa diimputasi modus juga sih 
+
+
+## Split dataa into cat and numeric
+```{r}
+df.cat <- select_if(df, is.character)
+df.num <- select_if(df, is.numeric)
+```
+
+```{r}
+glimpse(df.cat)
+glimpse(df.num)
+```
+
+```{r}
+df.num %>%
+  count(Coapplicant_Inc)
+```
+
+
+COapplicant_Inc ada nilai 0 nya, apakag perlu di ubah ya?
+
+```{r}
+boxplot(scale(df.num))
+```
+
+perlu aku winsorize sih ini 
+
+```{r}
+# ggplot(df.num, aes(x = Applicant_Income))+
+#   geom_histogram(fill = "#B2A4FF", color = "#B2A4FF", binwidth = 12) + 
+#   ggtitle("Judul sih ini ygy") + theme(plot.title = element_text(hjust = 0.5)) + 
+#   xlab("Xlabnya apa") + 
+#   ylab("Y labnya apa")
+```
+
+```{r}
+ggplot(df.num, aes(x = factor(Term), fill = factor(Term))) + 
+  geom_bar(stat = "count", width = 0.5, position=position_dodge()) + 
+  # scale_x_discrete(labels = c('Miskin','Ga Dulu'))+
+  geom_text(stat = "count", aes(label = ..count..), vjust  = -1) + 
+  ggtitle("Term") + theme(plot.title = element_text(hjust = 0.5)) + 
+  xlab("Term") + 
+  ylab("Jumlahnya") + 
+  labs(fill = "Term") + 
+  ylim(NA, 50)
+```
+
+
+```{r}
+median(df.num$Term, na.rm = TRUE)
+mean(df.num$Term, na.rm = TRUE)
+
+```
+
+
+```{r}
+df.num %>%
+  count(Dependents)
+```
+
+
+```{r}
+df.cat %>%
+  count(Credit_History)
+```
+
+# Characters
+```{r}
+df.cat %>%
+  count(Status)
+```
+
+
+# Imputasi dengan median 
+```{r}
+df.num <- df.num %>%
+  mutate(
+    Term = replace(Term, is.na(Term), median(Term, na.rm = TRUE))
+  )
+
+colSums(is.na(df.num))
+```
+
+# Imputasi dengan modus 
+```{r}
+getMode <- function(v){
+  v = v[nchar(as.character(v))>0]
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+df.cat <- df.cat %>%
+  mutate(
+    Credit_History = replace(Credit_History, is.na(Credit_History), getMode(Credit_History))
+  )
+
+colSums(is.na(df.cat))
+
+```
+
+
+# Cek Kategorinya
+```{r}
+df.cat %>% summarise_all(n_distinct)
+```
+
+```{r}
+df.cat
+```
+
+
+# Memfaktorkan
+```{r}
+df.cat.lab <- df.cat %>%
+  mutate(
+    gender = factor(Gender, labels = c(0:1)), # male = 1, female = 0
+    married = factor(Married, labels = c(0:1)), # yes = 1, no = 0
+    education = factor(Education, labels = c(1,0)), # grad = 1, not = 0
+    self_employed = factor(Self_Employed, labels = c(0:1)), # yes = 1, no = 0
+    credit_history = factor(Credit_History, labels = c(0:1)), # good = 1, bad = 0
+    area = factor(Area, labels = c(0:1)), # urban = 1, rural= 0
+    status = factor(Status, labels = c(0:1)) # y = 1, n = 0
+  )
+
+df.cat.lab
+```
+
+```{r}
+df.cat.lab <- df.cat.lab %>%
+  select(gender, married, education, self_employed, credit_history, area, status)
+df.cat.lab
+```
+
+
+# Data Numeric
+# Scale using min-max 
+```{r}
+minmax <- function(x){
+  return((x-min(x))/(max(x)-min(x)))
+}
+
+
+df.num.mm <- as.data.frame(lapply(df.num, minmax))
+df.num.mm
+```
+
+# Aggregation 
+```{r}
+df.fix <- data.frame(
+  df.cat.lab, df.num.mm
+)
+
+df.fix
+```
+
+# Cek apakah ada missing value
+```{r}
+colSums(is.na(df.fix))
+```
+
+ini mungkin masih bisa ada kemungkinan di apain ya menggunakan winsorize
+
+# Partisi DULU YGY
+```{r}
+train <- df.fix %>% dplyr::sample_frac(0.80)
+val  <- dplyr::anti_join(df.fix, train)
+```
+
+```{r}
+glimpse(train)
+glimpse(val)
+```
+
+# Random Forest
+```{r}
+library(party)
+library(randomForest)
+```
+```{r}
+rF.1 <- randomForest(status~., data = train)
+rF.1
+```
+
+```{r}
+rF.p1 <- predict(rF.1, val)
+rF.p1
+```
+
+```{r}
+confusionMatrix(rF.p1, val$status, mode = "everything")
+```
+
+```{r}
+train.2 <- train %>%
+  select(-Coapplicant_Inc)
+rF.2 <- randomForest(status~., data = train.2)
+rF.2
+```
+
+```{r}
+val.2 <- val %>%
+  select(-Coapplicant_Inc)
+rF.p2 <- predict(rF.2, val.2)
+rF.p2
+```
+
+```{r}
+confusionMatrix(rF.p2, val.2$status, mode = "everything")
+```
+
+
+```{r}
+rF.all <- randomForest(status~., data = df.fix)
+rF.all
+```
+
+```{r}
+rF.pAll <- predict(rF.all, df.fix)
+rF.pAll
+```
+
+```{r}
+confusionMatrix(rF.pAll, df.fix$status, mode = "everything")
+```
+
+
+# Yaudah hayuk prediksi aja 
+
+```{r}
+
+df.pred <- df.pred %>%
+  mutate(Credit_History = as.character(Credit_History))
+glimpse(df.pred)
+
+```
+
+```{r}
+## Split dataa into cat and numeric
+
+dfp.cat <- select_if(df.pred, is.character)
+dfp.num <- select_if(df.pred, is.numeric)
+```
+
+```{r}
+colSums(is.na(df.pred))
+```
+
+```{r}
+dfp.num <- dfp.num %>%
+  mutate(
+    Term = replace(Term, is.na(Term), median(Term, na.rm = TRUE))
+  )
+
+colSums(is.na(dfp.num))
+```
+
+```{r}
+getMode <- function(v){
+  v = v[nchar(as.character(v))>0]
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+dfp.cat <- dfp.cat %>%
+  mutate(
+    Credit_History = replace(Credit_History, is.na(Credit_History), getMode(Credit_History))
+  )
+
+colSums(is.na(dfp.cat))
+```
+
+```{r}
+glimpse(dfp.num)
+glimpse(dfp.cat)
+```
+
+```{r}
+dfp.cat.lab <- dfp.cat %>%
+  mutate(
+    gender = factor(Gender, labels = c(0:1)), # male = 1, female = 0
+    married = factor(Married, labels = c(0:1)), # yes = 1, no = 0
+    education = factor(Education, labels = c(1,0)), # grad = 1, not = 0
+    self_employed = factor(Self_Employed, labels = c(0:1)), # yes = 1, no = 0
+    credit_history = factor(Credit_History, labels = c(0:1)), # good = 1, bad = 0
+    area = factor(Area, labels = c(0:1)) # urban = 1, rural= 0
+
+  )
+
+dfp.cat.lab
+```
+
+```{r}
+dfp.cat.lab <- dfp.cat.lab %>%
+  select(gender, married, education, self_employed, credit_history, area)
+dfp.cat.lab
+```
+
+
+# Data Numeric
+# Scale using min-max 
+```{r}
+minmax <- function(x){
+  return((x-min(x))/(max(x)-min(x)))
+}
+
+
+dfp.num.mm <- as.data.frame(lapply(dfp.num, minmax))
+dfp.num.mm
+```
+
+
+```{r}
+dfp <- data.frame(
+  dfp.num.mm, dfp.cat.lab
+)
+
+dfp <- dfp %>%
+  select(-no_sampel)
+
+glimpse(dfp)
+colSums(is.na(dfp))
+
+```
+
+```{r}
+df.fix
+```
+
+```{r}
+dfp
+```
+
+
+# Forecase
+```{r}
+pred.fix <- predict(rF.all, dfp)
+pred.fix
+```
+
+```{r}
+pred.fix.2 <- predict(rF.1, dfp)
+pred.fix.2
+```
+
+
+```{r}
+df.temp$prediksi_status = pred.fix.2
+df.temp <- df.temp %>%
+  mutate(
+    prediksi_status = ifelse(prediksi_status == 1, "Y", "N")
+    )
+
+write.csv(df.temp, "utsdatmin_222011347___.csv")
+
+
+```
+
+
+
+
+#SVM 
+```{r}
+svm.1 <- svm(status~., data = train)
+svm.1
+```
+
+```{r}
+svm.p1 <- predict(svm.1, val)
+svm.p1
+```
+
+```{r}
+confusionMatrix(svm.p1, val$status, mode = "everything")
+```
+# Xgboost
+```{r}
+df.xgb <- train %>%
+  mutate(
+    gender = as.numeric(gender),
+    married = as.numeric(married),
+    education = as.numeric(education),
+    self_employed = as.numeric(self_employed),
+    credit_history = as.numeric(credit_history),
+    area = as.numeric(area)
+  ) %>%
+  select(-status)
+
+as.matrix(df.xgb)
+```
+
+
+```{r}
+library(xgboost)
+xgb <- xgboost(data = as.matrix(df.xgb), label = train$status, max.depth = 2, eta = 1, nthread = 2, nrounds = 2)
+
+```
+
+
+# 
+```{r}
+SVMOPT=tune.svm(status~.,data = train ,
+cost = c(1^( 2:9)),
+gamma = c(0.001 ,.005 ,0.01 ,0.1) ,
+epsilon = c(0,1,0.1))
+
+print(SVMOPT$best.performance)
+SVMOPT$best.model
+
+```
+
+```{r}
+svmopt.p1 <- predict(SVMOPT$best.model, val)
+svmopt.p1
+```
+
+```{r}
+confusionMatrix(svmopt.p1, val$status, mode = "everything")
+```
+
+
+# 
+```{r}
+train_control <- trainControl(method="cv", number=10)
+
+model <- train(status~., data=train, trControl=train_control,method="rf")
+
+(model)
+```
+
+```{r}
+cv.p1 <- predict(model, val)
+cv.p1
+```
+
+```{r}
+confusionMatrix(cv.p1, val$status, mode = "everything")
+```
+
+
+# LOOCV
+
+```{r}
+train_control.2 <- trainControl(method="LOOCV") # leave one out, sebanyak data nanti
+# atur parameter mtry pada random forrest
+grid <- expand.grid(.fL=c(0), .usekernel=c(FALSE)) # ini tuning parameter untuk svm, 
+# train the model
+model.2 <- train(status~., data=train, trControl=train_control.2, method="svm", tuneGrid=grid)
+# summarize results
+print(model.2)
+```
+
+# KNN
+```{r}
+library(kknn)
+```
+```{r}
+knn.1 <- train.kknn(status~., data = train, kmax = 15)
+knn.1
+```
+
+```{r}
+knn.p1 <- predict(knn.1, val)
+knn.p1
+```
+
+```{r}
+confusionMatrix(knn.p1, val$status, mode = "everything")
+```
+
+
+
+```{r}
+```
+
+
+ = 

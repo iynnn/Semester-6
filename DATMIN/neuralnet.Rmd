@@ -1,0 +1,162 @@
+---
+title: ""
+date: "`r Sys.Date()`"
+output:
+  rmdformats::downcute:
+    self_contained: true
+    default_style: "light"
+    downcute_theme: "default"
+---
+
+
+```{r setup, include=FALSE}
+## Global options
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r}
+#Multiclass classification using NN
+library(neuralnet) # dia lebih ke arah regresi, y nya butuh kontinue 
+# y nya hrus diubah menjadi dummy variable
+library(nnet)
+library(caret)
+```
+
+```{r}
+# Load data and set variables names
+setwd("C:/Users/yanto/OneDrive - UGM 365/semester 6/semester-6-/DatMin/[DM06] Pertemuan 6")
+wines <- read.csv("wine.csv")
+names(wines) <- c("label",
+                  "Alcohol",
+                  "Malic_acid",
+                  "Ash",
+                  "Alcalinity_of_ash",
+                  "Magnesium",
+                  "Total_phenols",
+                  "Flavanoids",
+                  "Nonflavanoid_phenols",
+                  "Proanthocyanins",
+                  "Color_intensity",
+                  "Hue",
+                  "OD280_OD315_of_diluted_wines",
+                  "Proline")
+head(wines)
+```
+```{r}
+str(wines)
+```
+```{r}
+summary(wines)
+```
+
+```{r}
+# Encode as a one hot vector multilabel data
+train <- cbind(wines[, 2:14], class.ind(as.factor(wines$label)))  # class.ind itu buat mecah faktor  jadi sejumlah kolom banyaknya faktor dan jadi matriks 1 0 
+# Set labels name
+names(train) <- c(names(wines)[2:14],"l1","l2","l3")
+```
+
+```{r}
+# Scale data
+scl <- function(x){ (x - min(x))/(max(x) - min(x)) }
+train[, 1:13] <- data.frame(lapply(train[, 1:13], scl))
+train
+
+```
+```{r}
+n <- names(train)
+f <- as.formula(paste("l1 + l2 + l3 ~", paste(n[!n %in% c("l1","l2","l3")], collapse = " + ")))
+
+```
+# Tanh
+
+```{r}
+nn <- neuralnet(f,
+                data = train,
+                hidden = c(13, 10, 3), # ini bisa digunakan  pembentukan arsitektur
+                # ada 3 hidden layer, HL pertama itu 13 dan selanjutnya 
+                # kalau data ga banyak banyak ya hidden layernya dikit aja 
+                act.fct = "tanh", #cuma bisa 'tanh' sama 'logistic'
+                linear.output = FALSE,
+                lifesign = "minimal")
+plot(nn)
+```
+
+# Logistic
+
+```{r}
+nn <- neuralnet(f,
+                data = train,
+                hidden = c(13, 10, 3), # ini bisa digunakan  pembentukan arsitektur
+                # ada 3 hidden layer, HL pertama itu 13 dan selanjutnya 
+                # kalau data ga banyak banyak ya hidden layernya dikit aja 
+                act.fct = "logistic", #cuma bisa 'tanh' sama 'logistic'
+                linear.output = FALSE,
+                lifesign = "minimal")
+plot(nn)
+```
+```{r}
+# Compute predictions
+pr.nn <- compute(nn, train[, 1:13])
+head(pr.nn$net.result)
+```
+
+
+```{r}
+#accuracy
+# Accuracy (training set)
+pr.nn_1 <- pr.nn$net.result
+original_values <- max.col(train[, 14:16]) # max.col = position of maximum value in coloumn
+pr.nn_2 <- max.col(pr.nn_1)
+table(original_values,pr.nn_2)
+
+```
+
+```{r}
+# sudo apt-get update
+# sudo apt-get install -y r-base-core r-cran-devtools libcairo2-dev libxml2-dev
+
+
+install.packages("roxygen2")
+# make -f R-package/Makefile rpkg
+
+install.packages("drat", repos="https://cran.rstudio.com")
+drat:::addRepo("dmlc")
+install.packages("mxnet")
+```
+
+
+```{r}
+#Using mxnet
+require(mxnet)
+library(mxnet)
+wines$label <- as.factor(wines$label)
+str(wines)
+```
+
+```{r}
+idx <- createDataPartition(wines$label, p = 0.8, list=FALSE)
+dtrain <- wines[idx,]
+dtes <- wines[-idx,]
+
+ctrl <- trainControl(method="repeatedcv",   # 10fold cross validation
+                     repeats=5,         # do 5 repetitions of cv
+                     summaryFunction=twoClassSummary,   # Use AUC to pick the best model
+                     classProbs=TRUE)
+
+nn.tune <- train(label~., data = dtrain,
+                  method = "mxnet",   # Radial kernel
+                  tuneLength = 5,         # 5 values of the cost function
+                  preProc = c("center","scale"),  # Center and scale data
+                  metric="ROC",
+                  trControl=ctrl)
+
+```
+
+
+
+
+
+
+
+
