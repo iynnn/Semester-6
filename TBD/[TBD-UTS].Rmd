@@ -1,0 +1,515 @@
+---
+title: "Muhamad Feriyanto"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::downcute:
+    self_contained: true
+    default_style: "light"
+    downcute_theme: "default"
+---
+
+** MUHAMAD FERIYANTO / 222011347 / 3SD1 /UTS Teknologi Big Data **
+
+```{r setup, include=FALSE}
+## Global options
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+# Library
+```{r}
+library(readxl)
+library(tidyverse)
+library(sae)
+library(saeME)
+library(car)
+library(Metrics)
+```
+
+# Read Data
+
+## NTL
+```{r}
+raw.ntl.18 <- read.csv("JABAR_NTL_2018.csv")
+raw.ntl.19 <- read.csv("JABAR_NTL_2019.csv")
+raw.ntl.20 <- read.csv("JABAR_NTL_2020.csv")
+raw.ntl.21 <- read.csv("JABAR_NTL_2021.csv")
+```
+
+## LST
+```{r}
+raw.lst.mean <- read.csv("JABAR_LST_2018_mean.csv")
+raw.lst.med <- read.csv("JABAR_LST_2018_median.csv")
+```
+
+## OffStat (PODES)
+```{r}
+raw.podes <- read_excel("final_result.xlsx")
+```
+
+# Structure Data
+
+## NTL 18
+```{r}
+glimpse(raw.ntl.18)
+```
+
+## NTL 19
+```{r}
+glimpse(raw.ntl.19)
+```
+
+## NTL 20
+```{r}
+glimpse(raw.ntl.20)
+```
+
+## NTL 21
+```{r}
+glimpse(raw.ntl.21)
+```
+
+## LST mean 
+```{r}
+glimpse(raw.lst.mean)
+```
+
+## LST median
+```{r}
+glimpse(raw.lst.med)
+```
+
+
+## PODES
+```{r}
+glimpse(raw.podes)
+```
+
+# Selecting Variables
+
+## LST
+Variabel yang diambil adalah LST Day dengan Kode Kecamatan
+```{r}
+lst.mean <- raw.lst.mean %>%
+  dplyr::select(CC_3,LST_Day_1km) %>%
+  rename('Kodekec' = 'CC_3', 'lst_mean' = 'LST_Day_1km')
+
+lst.med <- raw.lst.med %>%
+  dplyr::select(CC_3,LST_Day_1km) %>%
+  rename('Kodekec' = 'CC_3', 'lst_median' = 'LST_Day_1km')
+
+```
+
+```{r}
+head(lst.mean)
+```
+```{r}
+head(lst.mean)
+```
+## NTL 
+```{r}
+# NTL 18
+ntl.18 <- raw.ntl.18 %>%
+  dplyr::select(CC_3, mean) %>%
+  rename('Kodekec' = 'CC_3', 'ntl.18' = 'mean')
+
+# NTL 19
+ntl.19 <- raw.ntl.19 %>%
+  dplyr::select(CC_3, mean) %>%
+  rename('Kodekec' = 'CC_3', 'ntl.19' = 'mean')
+
+# NTL 20
+ntl.20 <- raw.ntl.20 %>%
+  dplyr::select(CC_3, mean) %>%
+  rename('Kodekec' = 'CC_3', 'ntl.20' = 'mean')
+
+# NTL 21
+ntl.21 <- raw.ntl.21 %>%
+  dplyr::select(CC_3, mean) %>%
+  rename('Kodekec' = 'CC_3', 'ntl.21' = 'mean')
+
+```
+
+## PODES
+```{r}
+podes <- raw.podes %>%
+  dplyr::select(-c('Average', 'pkp_1','pkp_2','pkp_3'))
+```
+
+```{r}
+head(podes)
+```
+
+
+
+
+
+
+# Visualization
+
+## LST Mean
+```{r}
+ggplot(lst.mean, aes(x = lst_mean)) + 
+  geom_histogram(fill = "grey",color = "black")+ 
+  ggtitle("LST Mean") +
+   theme(plot.title = element_text(hjust = 0.5))
+```
+## LST Median
+```{r}
+ggplot(lst.med, aes(x = lst_median)) + 
+  geom_histogram(fill = "grey",color = "black")+ 
+  ggtitle("LST Median") +
+   theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+## NTL 18
+```{r}
+ggplot(ntl.18, aes(x = ntl.18)) + 
+  geom_histogram(fill = "grey",color = "black")+ 
+  ggtitle("NTL 2018") +
+   theme(plot.title = element_text(hjust = 0.5))
+```
+
+## NTL 19
+```{r}
+ggplot(ntl.19, aes(x = ntl.19)) + 
+  geom_histogram(fill = "grey",color = "black")+ 
+  ggtitle("NTL 2019") +
+   theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+## NTL 20
+```{r}
+ggplot(ntl.20, aes(x = ntl.20)) + 
+  geom_histogram(fill = "grey",color = "black")+ 
+  ggtitle("NTL 2020") +
+   theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+## NTL 21
+```{r}
+ggplot(ntl.21, aes(x = ntl.21)) + 
+  geom_histogram(fill = "grey",color = "black")+ 
+  ggtitle("NTL 2021") +
+   theme(plot.title = element_text(hjust = 0.5))
+```
+## Pengeluaran per Kapita
+```{r}
+ggplot(podes, aes(x = (pengeluaran_perkapita/1000))) + 
+  geom_histogram(fill = "grey",color = "black")+ 
+  ggtitle("Pengeluaran per Kapita di Jawa Barat 2018 tingkat Kecamatan") +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  xlab("Pengeluaran per Kapita (Juta Rupiah/Orang/Tahun)")
+```
+
+
+# Merge All
+```{r}
+# Join all remote sensing value
+rs <- list(ntl.18,ntl.19,ntl.20, ntl.21,lst.mean, lst.med) %>% reduce(inner_join, by='Kodekec')
+head(rs)
+
+
+# Join remote sensing with Podes
+df.raw <- merge(podes, rs, by = "Kodekec", all.x = TRUE)
+df.raw
+```
+
+## Check Missing value
+```{r}
+colSums(is.na(df.raw))
+```
+
+## Remove Missing Value
+```{r}
+df <- df.raw %>%
+  na.omit()
+
+colSums(is.na(df))
+```
+
+
+# Small Area Estimation
+
+## All Variable Podes
+
+
+```{r}
+attach(df)
+reg <- step(lm(
+  pengeluaran_perkapita ~ PT_N+JumlahPondok+JumlahMontir+JumlahBAsing+JumlahPoskesdes+R1206EK2
+), direction = "both")
+
+summary(reg)
+detach(df)
+```
+
+```{r}
+attach(df)
+result.1 <- mseFH(pengeluaran_perkapita ~ PT_N+JumlahPondok+JumlahMontir+JumlahBAsing+JumlahPoskesdes+R1206EK2, var)
+result.1
+detach(df)
+```
+
+## NTL 2018
+```{r}
+attach(df)
+result.2 <- mseFH(pengeluaran_perkapita ~ df$ntl.18, var)
+result.2
+detach(df)
+```
+
+## LST (mean)
+```{r}
+attach(df)
+result.3a <- mseFH(pengeluaran_perkapita ~ lst_mean, var)
+result.3a
+detach(df)
+```
+
+## LST (median)
+```{r}
+attach(df)
+result.3b <- mseFH(pengeluaran_perkapita ~ lst_median, var)
+result.3b
+detach(df)
+```
+
+
+## Combine NTL and LST (mean)
+```{r}
+attach(df)
+result.4a <- mseFH(pengeluaran_perkapita ~ df$ntl.18 +lst_mean, var)
+result.4a
+detach(df)
+```
+
+## Combine NTL and LST (median)
+```{r}
+attach(df)
+result.4b <- mseFH(pengeluaran_perkapita ~ df$ntl.18 +lst_median, var)
+result.4b
+detach(df)
+```
+
+# PODES + LST (mean)
+```{r}
+attach(df)
+result.5a <- mseFH(pengeluaran_perkapita ~ PT_N+JumlahPondok+JumlahMontir+JumlahBAsing+JumlahPoskesdes+R1206EK2+lst_mean, var)
+result.5a
+detach(df)
+```
+
+# PODES + LST (median)
+```{r}
+attach(df)
+result.5b <- mseFH(pengeluaran_perkapita ~ PT_N+JumlahPondok+JumlahMontir+JumlahBAsing+JumlahPoskesdes+R1206EK2+lst_median, var)
+result.5b
+detach(df)
+```
+
+# ALL (mean)
+```{r}
+attach(df)
+result.6a <- mseFH(pengeluaran_perkapita ~ PT_N+JumlahPondok+JumlahMontir+JumlahBAsing+JumlahPoskesdes+R1206EK2+lst_mean +df$ntl.18, var)
+result.6a
+detach(df)
+```
+
+# ALL (median)
+```{r}
+attach(df)
+result.6b <- mseFH(pengeluaran_perkapita ~ PT_N+JumlahPondok+JumlahMontir+JumlahBAsing+JumlahPoskesdes+R1206EK2+lst_median +df$ntl.18, var)
+result.6b
+detach(df)
+```
+Yang akan digunakan adalah : 
+1. result.1 --> PODES
+2. result.2 --> NTL
+3. result.3b --> LST median
+4. result.4b --> NTL  + LST
+5. result.6b --> All 
+
+# MSE
+```{r}
+mse.1 <- result.1$mse
+mse.2 <- result.2$mse
+mse.3a <- result.3a$mse
+mse.3b <- result.3b$mse
+mse.4a <- result.4a$mse
+mse.4b <- result.4b$mse
+mse.5a <- result.5a$mse
+mse.5b <- result.5b$mse
+mse.6a <- result.6a$mse
+mse.6b <- result.6b$mse
+
+mse <- cbind(index=c(1:596),mse.1, mse.2, mse.3b, mse.4b, mse.6b)
+mse <- data.frame(mse)
+mse
+```
+
+```{r}
+ggplot(mse, aes(x = index))+
+  geom_line(aes(y = mse.1, 
+                colour = "SAE PODES"), size=0.7)+
+  geom_line(aes(y = mse.2, 
+                colour = "SAE NTL"), size=0.7)+
+  geom_line(aes(y = mse.3b, 
+                colour = "SAE LST"), size=0.7)+
+  geom_line(aes(y = mse.4b, 
+                colour = "SAE NTL + LST"), size=0.7)+
+  geom_line(aes(y = mse.6b, 
+                colour = "SAE PODES + NTL + LST"), size=0.7)+
+    scale_fill_manual( "",
+                     breaks = c("SAE LST", "SAE NTL",
+                                 "SAE NTL + LST","SAE PODES",
+                                "SAE PODES + NTL + LST"),
+                     labels = c("SAE LST", "SAE NTL",
+                                 "SAE NTL + LST","SAE PODES",
+                                "SAE PODES + NTL + LST"))+
+  scale_colour_manual(values = c("#ff0000",
+                                 "#FFf000", 
+                                 "#00ff00",
+                                 "#000000",
+                                 "#0000ff"))+
+  labs(y = "MSE",
+       x = "Kecamatan", colour = "")+
+  coord_cartesian(ylim = c(0, 76734214339	), xlim = c(0,600))+
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("Perbandingan MSE")
+
+```
+# Nilai Estimasi
+```{r}
+y.ril <- df$pengeluaran_perkapita
+ycap.1 <- result.1$est$eblup
+ycap.2 <- result.2$est$eblup
+ycap.3b <- result.3b$est$eblup
+ycap.4b <- result.4b$est$eblup
+ycap.6b <- result.6b$est$eblup
+
+ycap <- cbind(index = c(1:596), y.ril, ycap.1,ycap.2,ycap.3b,ycap.4b,ycap.6b)
+ycap <- data.frame(ycap)
+ycap
+```
+
+
+## Y Direct dengan SAE PODES
+```{r}
+vis.y <- ggplot(ycap, aes(index)) +
+  geom_line(aes(y = (y.ril/1000), colour = "Y Direct")) +
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5)) + 
+  labs(y = "Pengeluaran per Kapita (Juta/Orang/Tahun)",
+       x = "Kecamatan") 
+
+## SAE PODES
+vis.y + ggtitle("Y Direct dengan SAE PODES") +
+  geom_line(aes(y = (ycap.1/1000), colour = "SAE PODES")) +
+   scale_fill_manual( "",
+                     breaks = c("SAE PODES", "Y Direct"),
+                     labels = c("SAE PODES", "Y Direct"))+
+  scale_colour_manual(values = c("#0000ff", "#ff0000"))
+  
+```
+## Y Direct dengan NTL
+```{r}
+vis.y + ggtitle("Y Direct dengan SAE NTL") +
+  geom_line(aes(y = (ycap.2/1000), colour = "SAE NTL")) +
+   scale_fill_manual( "",
+                     breaks = c("SAE NTL", "Y Direct"),
+                     labels = c("SAE NTL", "Y Direct"))+
+  scale_colour_manual(values = c("#0000ff", "#ff0000"))
+```
+
+## Y Direct dengan LST
+```{r}
+vis.y + ggtitle("Y Direct dengan SAE LST") +
+  geom_line(aes(y = (ycap.3b/1000), colour = "SAE LST")) +
+   scale_fill_manual( "",
+                     breaks = c("SAE LST", "Y Direct"),
+                     labels = c("SAE LST", "Y Direct"))+
+  scale_colour_manual(values = c("#0000ff", "#ff0000"))
+```
+
+## Y Direct dengan NTL + LST
+```{r}
+vis.y + ggtitle("Y Direct dengan SAE NTL + LST") +
+  geom_line(aes(y = (ycap.4b/1000), colour = "SAE NTL + LST")) +
+   scale_fill_manual( "",
+                     breaks = c("SAE NTL + LST", "Y Direct"),
+                     labels = c("SAE NTL + LST" , "Y Direct"))+
+  scale_colour_manual(values = c("#0000ff", "#ff0000"))
+```
+
+## Y Direct dengan PODES + NTL + LST
+```{r}
+vis.y + ggtitle("Y Direct dengan SAE PODES + NTL + LST") +
+  geom_line(aes(y = (ycap.6b/1000), colour = "SAE PODES + NTL + LST")) +
+   scale_fill_manual( "",
+                     breaks = c("SAE PODES + NTL + LST", "Y Direct"),
+                     labels = c("SAE PODES + NTL + LST", "Y Direct"))+
+  scale_colour_manual(values = c("#0000ff", "#ff0000"))
+```
+
+
+
+# Multikolinearitas
+
+## PODES
+```{r}
+vif.podes <- lm(pengeluaran_perkapita ~ PT_N+JumlahPondok+JumlahMontir+JumlahBAsing+JumlahPoskesdes+R1206EK2, data = df)
+vif(vif.podes)
+```
+
+## NTL + LST
+```{r}
+vif.ntl.lst <- lm(pengeluaran_perkapita ~ ntl.18 + lst_median, data = df)
+vif(vif.ntl.lst)
+```
+
+# All
+```{r}
+vif.all <- lm(pengeluaran_perkapita ~ PT_N+JumlahPondok+JumlahMontir+JumlahBAsing+JumlahPoskesdes+R1206EK2+ntl.18+lst_median, data = df)
+vif(vif.all)
+```
+
+
+# RMSE
+```{r}
+attach(ycap)
+rmse.podes <- rmse(y.ril, ycap.1)
+rmse.ntl <- rmse(y.ril, ycap.2)
+rmse.lst <- rmse(y.ril, ycap.3b)
+rmse.ntl.lst <- rmse(y.ril, ycap.4b)
+rmse.all <- rmse(y.ril, ycap.6b)
+
+
+
+rmse.sae <- c(rmse.podes, rmse.ntl, rmse.lst, rmse.ntl.lst, rmse.all)
+metode <- c("SAE PODES", "SAE NTL", "SAE LST", "SAE NTL + LST", "SAE PODES + NTL + LST")
+
+tabel.rmse <- data.frame(metode, rmse.sae)
+colnames(tabel.rmse) <- c("Metode", "RMSE")
+tabel.rmse
+
+detach(ycap)
+```
+# Summary File
+```{r}
+nilai.ycap <- data.frame(ycap.1, ycap.2, ycap.3b, ycap.4b, ycap.6b)
+full_value <- cbind(df,nilai.ycap)
+head(full_value)
+```
+```{r}
+glimpse(full_value)
+```
+
+```{r}
+# library(writexl)
+# write_xlsx(full_value, "[00]SAE Pengeluaran per Kapita Jabar 2018.xlsx")
+```
+
+
+
