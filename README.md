@@ -1,3 +1,3 @@
 # Semester-6
-ayo jangan semangad!!!!1
->_<
+ayo jangan semangad!!!!
+`>_<`
